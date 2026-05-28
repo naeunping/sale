@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>티켓딜 — 공연 할인 정보 한눈에</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #080b14;
+    --bg-card: #0e1322;
+    --bg-glass: rgba(255,255,255,0.04);
+    --navy: #0d1b3e;
+    --violet: #6c3de8;
+    --violet-light: #8b5cf6;
+    --violet-glow: rgba(108,61,232,0.35);
+    --magenta: #e040fb;
+    --cyan: #00e5ff;
+    --gold: #ffd54f;
+    --text-primary: #f0f2ff;
+    --text-secondary: #8892b0;
+    --text-muted: #4a5280;
+    --border: rgba(108,61,232,0.2);
+    --border-bright: rgba(108,61,232,0.5);
+    --card-shadow: 0 4px 40px rgba(0,0,0,0.5);
+    --hover-shadow: 0 12px 60px rgba(108,61,232,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    padding: 0 5%;
+    background: rgba(8,11,20,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    gap: 24px;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--violet-light), var(--magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .logo span {
+    background: linear-gradient(135deg, var(--cyan), var(--violet-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-search {
+    flex: 1;
+    max-width: 420px;
+    position: relative;
+  }
+
+  .header-search input {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 9px 18px 9px 42px;
+    color: var(--text-primary);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  .header-search input::placeholder { color: var(--text-muted); }
+  .header-search input:focus {
+    border-color: var(--violet-light);
+    background: rgba(108,61,232,0.1);
+    box-shadow: 0 0 0 3px var(--violet-glow);
+  }
+
+  .header-search .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    pointer-events: none;
+  }
+
+  nav {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  nav a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: color 0.2s;
+    white-space: nowrap;
+  }
+
+  nav a:hover { color: var(--violet-light); }
+
+  .nav-badge {
+    background: linear-gradient(135deg, var(--violet), var(--magenta));
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 50px;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .nav-badge:hover {
+    box-shadow: 0 0 20px var(--violet-glow);
+    transform: translateY(-1px);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    padding: 90px 5% 70px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  /* ambient light orbs */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: 50%;
+    transform: translateX(-50%);
+    width: 700px; height: 350px;
+    background: radial-gradient(ellipse, rgba(108,61,232,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 5%;
+    width: 300px; height: 300px;
+    background: radial-gradient(ellipse, rgba(224,64,251,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 3px;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 22px;
+    padding: 6px 16px;
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 50px;
+    background: rgba(0,229,255,0.06);
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--cyan);
+    border-radius: 50%;
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 6.5rem);
+    letter-spacing: 4px;
+    line-height: 0.95;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .hero h1 .line1 {
+    display: block;
+    background: linear-gradient(135deg, #fff 0%, var(--violet-light) 60%, var(--magenta) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero h1 .line2 {
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.5em;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 300;
+    letter-spacing: 6px;
+    opacity: 0.7;
+    margin-top: 10px;
+  }
+
+  .hero-sub {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    max-width: 520px;
+    margin: 0 auto 40px;
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--violet-light), var(--magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ── CONTROLS ── */
+  .controls-section {
+    padding: 0 5% 32px;
+    position: relative;
+  }
+
+  .controls-inner {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+
+  .filter-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .chip:hover {
+    border-color: var(--violet-light);
+    color: var(--violet-light);
+    background: rgba(108,61,232,0.1);
+  }
+
+  .chip.active {
+    background: linear-gradient(135deg, var(--violet), var(--violet-light));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 2px 16px var(--violet-glow);
+  }
+
+  .divider-v {
+    width: 1px;
+    height: 30px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+
+  .sort-select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.82rem;
+    padding: 8px 14px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238892b0' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .sort-select:focus {
+    border-color: var(--violet-light);
+    background-color: rgba(108,61,232,0.1);
+  }
+
+  .results-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .results-count span {
+    color: var(--violet-light);
+    font-weight: 600;
+  }
+
+  /* ── CARDS GRID ── */
+  .cards-section {
+    padding: 0 5% 80px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  /* ── TICKET CARD ── */
+  .ticket-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ticket-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--border-bright);
+    box-shadow: var(--hover-shadow);
+  }
+
+  /* genre colour accent bar */
+  .card-accent {
+    height: 3px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .card-body {
+    padding: 22px 22px 0;
+    flex: 1;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .genre-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 50px;
+  }
+
+  .discount-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 1px;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--magenta), var(--violet-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .card-title {
+    font-size: 1.08rem;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 14px;
+    color: var(--text-primary);
+  }
+
+  .card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 18px;
+  }
+
+  .info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .info-row .icon {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    width: 16px;
+    text-align: center;
+  }
+
+  /* dashed tear line */
+  .card-tear {
+    margin: 0 22px;
+    border: none;
+    border-top: 1.5px dashed rgba(255,255,255,0.08);
+    position: relative;
+  }
+
+  .card-tear::before,
+  .card-tear::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px;
+    background: var(--bg-deep);
+    border-radius: 50%;
+  }
+
+  .card-tear::before { left: -28px; }
+  .card-tear::after { right: -28px; }
+
+  .card-footer {
+    padding: 16px 22px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .discount-types {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+
+  .type-pill {
+    font-size: 0.66rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 50px;
+    letter-spacing: 0.3px;
+  }
+
+  .pill-student { background: rgba(0,229,255,0.12); color: var(--cyan); border: 1px solid rgba(0,229,255,0.25); }
+  .pill-card    { background: rgba(255,213,79,0.1); color: var(--gold); border: 1px solid rgba(255,213,79,0.25); }
+  .pill-early   { background: rgba(224,64,251,0.12); color: var(--magenta); border: 1px solid rgba(224,64,251,0.25); }
+  .pill-group   { background: rgba(108,61,232,0.15); color: var(--violet-light); border: 1px solid rgba(108,61,232,0.3); }
+  .pill-member  { background: rgba(100,210,255,0.1); color: #64d2ff; border: 1px solid rgba(100,210,255,0.25); }
+  .pill-revisit { background: rgba(100,255,180,0.1); color: #64ffb4; border: 1px solid rgba(100,255,180,0.25); }
+
+  .book-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-decoration: none;
+    color: #fff;
+    background: linear-gradient(135deg, var(--violet), var(--violet-light));
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    font-family: 'Noto Sans KR', sans-serif;
+    flex-shrink: 0;
+  }
+
+  .book-btn:hover {
+    box-shadow: 0 4px 20px var(--violet-glow);
+    transform: scale(1.04);
+  }
+
+  .book-btn .arrow {
+    font-size: 0.9rem;
+    transition: transform 0.2s;
+  }
+
+  .ticket-card:hover .book-btn .arrow {
+    transform: translateX(3px);
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 20px;
+  }
+
+  .empty-state .empty-icon { font-size: 4rem; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state h3 { font-size: 1.2rem; color: var(--text-secondary); font-weight: 500; margin-bottom: 8px; }
+  .empty-state p { font-size: 0.85rem; color: var(--text-muted); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: rgba(14,19,34,0.95);
+    border-top: 1px solid var(--border);
+    padding: 40px 5%;
+  }
+
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, var(--violet-light), var(--magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .footer-text {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .footer-links a {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--violet-light); }
+
+  /* ── GENRE COLORS ── */
+  .genre-musical { background: rgba(108,61,232,0.15); color: var(--violet-light); }
+  .genre-concert  { background: rgba(224,64,251,0.12); color: var(--magenta); }
+  .genre-exhibit  { background: rgba(0,229,255,0.1); color: var(--cyan); }
+  .genre-play     { background: rgba(255,213,79,0.1); color: var(--gold); }
+  .genre-sports   { background: rgba(100,210,100,0.1); color: #80e080; }
+  .genre-classic  { background: rgba(255,140,100,0.1); color: #ffaa77; }
+
+  .accent-musical { background: linear-gradient(90deg, var(--violet), var(--violet-light)); }
+  .accent-concert  { background: linear-gradient(90deg, var(--magenta), var(--violet)); }
+  .accent-exhibit  { background: linear-gradient(90deg, var(--cyan), #006090); }
+  .accent-play     { background: linear-gradient(90deg, var(--gold), #cc8800); }
+  .accent-sports   { background: linear-gradient(90deg, #80e080, #005500); }
+  .accent-classic  { background: linear-gradient(90deg, #ffaa77, #993300); }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    header { padding: 0 4%; gap: 12px; }
+    .logo { font-size: 1.6rem; }
+    nav a:not(.nav-badge) { display: none; }
+    .hero { padding: 60px 4% 50px; }
+    .hero h1 { font-size: 3rem; }
+    .controls-section { padding: 0 4% 24px; }
+    .controls-inner { padding: 18px; }
+    .divider-v { display: none; }
+    .cards-section { padding: 0 4% 60px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .footer-inner { flex-direction: column; text-align: center; }
+    .footer-links { justify-content: center; }
+  }
+
+  @media (max-width: 480px) {
+    .hero-stats { gap: 28px; }
+    .header-search { max-width: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">TICKET<span>딜</span></div>
+
+  <div class="header-search">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="공연명으로 검색..." autocomplete="off">
+  </div>
+
+  <nav>
+    <a href="#">오늘의 핫딜</a>
+    <a href="#">장르별</a>
+    <span class="nav-badge">지금 무료 이용</span>
+  </nav>
+</header>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-eyebrow">오늘의 할인 티켓</div>
+  <h1>
+    <span class="line1">BEST DEALS</span>
+    <span class="line2">공연 할인 정보를 한눈에 모아봤어요</span>
+  </h1>
+  <p class="hero-sub">뮤지컬, 콘서트, 전시까지 — 흩어진 할인 정보를 한곳에서.<br>지금 최대 할인으로 문화생활을 즐겨보세요.</p>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <div class="stat-num" id="statTotal">24</div>
+      <div class="stat-label">할인 공연</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">최대 50%</div>
+      <div class="stat-label">최고 할인율</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">5곳</div>
+      <div class="stat-label">제휴 예매처</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CONTROLS ── -->
+<section class="controls-section">
+  <div class="controls-inner">
+    <!-- Genre filter -->
+    <div class="filter-group">
+      <span class="filter-label">장르</span>
+      <div class="filter-chips" id="genreChips">
+        <button class="chip active" data-genre="all">전체</button>
+        <button class="chip" data-genre="뮤지컬">🎭 뮤지컬</button>
+        <button class="chip" data-genre="콘서트">🎵 콘서트</button>
+        <button class="chip" data-genre="전시">🖼 전시</button>
+        <button class="chip" data-genre="연극">🎪 연극</button>
+        <button class="chip" data-genre="클래식">🎻 클래식</button>
+      </div>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <!-- Discount type filter -->
+    <div class="filter-group">
+      <span class="filter-label">할인</span>
+      <div class="filter-chips" id="discountChips">
+        <button class="chip active" data-discount="all">전체</button>
+        <button class="chip" data-discount="학생할인">학생할인</button>
+        <button class="chip" data-discount="카드할인">카드할인</button>
+        <button class="chip" data-discount="얼리버드">얼리버드</button>
+        <button class="chip" data-discount="단체할인">단체할인</button>
+        <button class="chip" data-discount="회원할인">회원할인</button>
+        <button class="chip" data-discount="재관람할인">재관람할인</button>
+      </div>
+    </div>
+
+    <div class="divider-v"></div>
+
+    <!-- Sort -->
+    <div class="filter-group">
+      <span class="filter-label">정렬</span>
+      <select class="sort-select" id="sortSelect">
+        <option value="discount">할인율 높은 순</option>
+        <option value="newest">최신순</option>
+      </select>
+    </div>
+
+    <div class="results-count" id="resultsCount">
+      <span>0</span>개의 할인 공연
+    </div>
+  </div>
+</section>
+
+<!-- ── CARDS ── -->
+<section class="cards-section">
+  <div class="cards-grid" id="cardsGrid"></div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">TICKET딜</div>
+      <div class="footer-text" style="margin-top:8px;">공연 할인 정보 통합 플랫폼 — MVP v1.0<br>© 2026 티켓딜. 모든 할인 정보는 각 예매처 기준입니다.</div>
+    </div>
+    <div class="footer-links">
+      <a href="#">이용약관</a>
+      <a href="#">개인정보처리방침</a>
+      <a href="#">공연 제보하기</a>
+      <a href="#">문의</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ─────────────────────────────────────────
+   DATA
+───────────────────────────────────────── */
+const tickets = [
+  {
+    id: 1,
+    title: "뮤지컬 〈빌리 엘리어트〉",
+    genre: "뮤지컬",
+    discountRate: 30,
+    discountTypes: ["학생할인", "카드할인"],
+    venue: "블루스퀘어 우리은행홀",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/genre/musical",
+    date: "2026-04-12 ~ 07-26",
+    added: 1
+  },
+  {
+    id: 2,
+    title: "뮤지컬 〈베토벤〉",
+    genre: "뮤지컬",
+    discountRate: 25,
+    discountTypes: ["얼리버드", "회원할인"],
+    venue: "세종문화회관 대극장",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/genre/musical",
+    date: "2026-06-09 ~ 08-11",
+    added: 2
+  },
+  {
+    id: 3,
+    title: "뮤지컬 〈그날들〉",
+    genre: "뮤지컬",
+    discountRate: 20,
+    discountTypes: ["카드할인", "단체할인"],
+    venue: "디큐브 링크아트센터",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/notice/detail/13388",
+    date: "2026-06-09 ~ 08-23",
+    added: 3
+  },
+  {
+    id: 4,
+    title: "뮤지컬 〈신과 함께_저승편〉",
+    genre: "뮤지컬",
+    discountRate: 30,
+    discountTypes: ["학생할인", "카드할인"],
+    venue: "NOL씨어터 대학로 우리카드홀",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/genre/musical",
+    date: "2026-06-13 ~ 07-05",
+    added: 4
+  },
+  {
+    id: 5,
+    title: "뮤지컬 〈서편제〉",
+    genre: "뮤지컬",
+    discountRate: 25,
+    discountTypes: ["재관람할인", "단체할인"],
+    venue: "광림아트센터 BBCH홀",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/genre/musical",
+    date: "2026-04-30 ~ 07-19",
+    added: 5
+  },
+  {
+    id: 6,
+    title: "뮤지컬 〈스윙 데이즈_암호명 A〉",
+    genre: "뮤지컬",
+    discountRate: 20,
+    discountTypes: ["카드할인", "학생할인"],
+    venue: "충무아트센터 대극장",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/genre/musical",
+    date: "2026-04-16 ~ 07-05",
+    added: 6
+  },
+  {
+    id: 7,
+    title: "뮤지컬 〈브라더스 까라마조프〉",
+    genre: "뮤지컬",
+    discountRate: 30,
+    discountTypes: ["재관람할인", "회원할인"],
+    venue: "NOL씨어터 대학로 우리투자증권홀",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/genre/musical",
+    date: "2026-05-12 ~ 09-06",
+    added: 7
+  },
+  {
+    id: 8,
+    title: "연극 〈마우스피스〉: 연극열전10",
+    genre: "연극",
+    discountRate: 35,
+    discountTypes: ["학생할인", "얼리버드"],
+    venue: "예스24아트원 2관",
+    seller: "YES24",
+    link: "https://ticket.yes24.com",
+    date: "2026-05-25 ~ 05-31",
+    added: 8
+  },
+  {
+    id: 9,
+    title: "뮤지컬 〈오즈〉",
+    genre: "뮤지컬",
+    discountRate: 30,
+    discountTypes: ["단체할인", "카드할인"],
+    venue: "대학로 TOM(티오엠) 2관",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/genre/musical",
+    date: "2026-05-05 ~ 07-19",
+    added: 9
+  },
+  {
+    id: 10,
+    title: "앤디 워홀: 예술을 팔다 (대구)",
+    genre: "전시",
+    discountRate: 40,
+    discountTypes: ["얼리버드", "학생할인"],
+    venue: "대구문화예술회관 미술관",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com",
+    date: "2026-07-03 ~ 09-30",
+    added: 10
+  },
+  {
+    id: 11,
+    title: "뮤지컬 〈너희들로 세상은 변할거야〉",
+    genre: "뮤지컬",
+    discountRate: 20,
+    discountTypes: ["학생할인", "회원할인"],
+    venue: "링크아트센터 벅스홀",
+    seller: "인터파크",
+    link: "https://tickets.interpark.com/contents/genre/musical",
+    date: "2026-06-18 ~ 09-06",
+    added: 11
+  },
+  {
+    id: 12,
+    title: "서울국제도서전 2026",
+    genre: "전시",
+    discountRate: 30,
+    discountTypes: ["얼리버드"],
+    venue: "코엑스 (강남구)",
+    seller: "네이버예약",
+    link: "https://booking.naver.com",
+    date: "2026-06-24 ~ 06-28",
+    added: 12
+  }
+];
+
+/* ─────────────────────────────────────────
+   STATE
+───────────────────────────────────────── */
+let activeGenre = 'all';
+let activeDiscount = 'all';
+let activeSort = 'discount';
+let searchQuery = '';
+
+/* ─────────────────────────────────────────
+   HELPERS
+───────────────────────────────────────── */
+const genreClass = {
+  '뮤지컬': { tag: 'genre-musical', accent: 'accent-musical' },
+  '콘서트':  { tag: 'genre-concert',  accent: 'accent-concert'  },
+  '전시':    { tag: 'genre-exhibit',  accent: 'accent-exhibit'  },
+  '연극':    { tag: 'genre-play',     accent: 'accent-play'     },
+  '스포츠':  { tag: 'genre-sports',   accent: 'accent-sports'   },
+  '클래식':  { tag: 'genre-classic',  accent: 'accent-classic'  },
+};
+
+const pillClass = {
+  '학생할인': 'pill-student',
+  '카드할인': 'pill-card',
+  '얼리버드': 'pill-early',
+  '단체할인': 'pill-group',
+  '회원할인': 'pill-member',
+  '재관람할인': 'pill-revisit',
+};
+
+function filtered() {
+  let list = [...tickets];
+  if (searchQuery) {
+    list = list.filter(t => t.title.includes(searchQuery) || t.genre.includes(searchQuery));
+  }
+  if (activeGenre !== 'all') {
+    list = list.filter(t => t.genre === activeGenre);
+  }
+  if (activeDiscount !== 'all') {
+    list = list.filter(t => t.discountTypes.includes(activeDiscount));
+  }
+  if (activeSort === 'discount') {
+    list.sort((a, b) => b.discountRate - a.discountRate);
+  } else {
+    list.sort((a, b) => b.added - a.added);
+  }
+  return list;
+}
+
+function renderCard(t) {
+  const gc = genreClass[t.genre] || { tag: 'genre-musical', accent: 'accent-musical' };
+  const pills = t.discountTypes.map(d =>
+    `<span class="type-pill ${pillClass[d] || ''}">${d}</span>`
+  ).join('');
+
+  return `
+  <article class="ticket-card reveal">
+    <div class="card-accent ${gc.accent}"></div>
+    <div class="card-body">
+      <div class="card-meta">
+        <span class="genre-tag ${gc.tag}">${t.genre}</span>
+        <span class="discount-badge">-${t.discountRate}%</span>
+      </div>
+      <h2 class="card-title">${t.title}</h2>
+      <div class="card-info">
+        <div class="info-row"><span class="icon">📍</span>${t.venue}</div>
+        <div class="info-row"><span class="icon">🎫</span>${t.seller}</div>
+        <div class="info-row"><span class="icon">📅</span>${t.date} ~</div>
+      </div>
+    </div>
+    <hr class="card-tear">
+    <div class="card-footer">
+      <div class="discount-types">${pills}</div>
+      <a class="book-btn" href="${t.link}" target="_blank" rel="noopener">
+        예매하기 <span class="arrow">→</span>
+      </a>
+    </div>
+  </article>`;
+}
+
+function render() {
+  const list = filtered();
+  const grid = document.getElementById('cardsGrid');
+  const countEl = document.getElementById('resultsCount');
+
+  if (list.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🎭</div>
+        <h3>일치하는 공연이 없어요</h3>
+        <p>다른 검색어나 필터를 사용해보세요.</p>
+      </div>`;
+  } else {
+    grid.innerHTML = list.map(renderCard).join('');
+    // staggered reveal
+    requestAnimationFrame(() => {
+      const cards = grid.querySelectorAll('.reveal');
+      cards.forEach((el, i) => {
+        el.style.transitionDelay = `${i * 55}ms`;
+        requestAnimationFrame(() => el.classList.add('visible'));
+      });
+    });
+  }
+
+  countEl.querySelector('span').textContent = list.length;
+}
+
+/* ─────────────────────────────────────────
+   EVENTS
+───────────────────────────────────────── */
+// Genre chips
+document.getElementById('genreChips').addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  document.querySelectorAll('#genreChips .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  activeGenre = btn.dataset.genre;
+  render();
+});
+
+// Discount chips
+document.getElementById('discountChips').addEventListener('click', e => {
+  const btn = e.target.closest('.chip');
+  if (!btn) return;
+  document.querySelectorAll('#discountChips .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  activeDiscount = btn.dataset.discount;
+  render();
+});
+
+// Sort
+document.getElementById('sortSelect').addEventListener('change', e => {
+  activeSort = e.target.value;
+  render();
+});
+
+// Search (header + debounce)
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input', e => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    searchQuery = e.target.value.trim();
+    render();
+  }, 280);
+});
+
+/* ─────────────────────────────────────────
+   INIT
+───────────────────────────────────────── */
+render();
+document.getElementById('statTotal').textContent = tickets.length;
+</script>
+</body>
+</html>
